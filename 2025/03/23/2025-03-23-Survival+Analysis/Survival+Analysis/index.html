@@ -1,0 +1,444 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Survival Analysis | 寒酱の私密小窝</title><meta name="author" content="可爱小寒酱"><meta name="copyright" content="可爱小寒酱"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="本文章既用来测试，也用来记录大数据软件分析Project1中生存分析的Report Q2 Survival Analysis Report数据集读取与预处理读取数据集，在本案例中Churn代表着是否流失，即生存分析中的事件（Event），因此将其转换为布尔值，便于后续分析   Kaplan-Meier 与Log-Rank检验Kaplan-Meier（K-M）方法是生存分析中估计生存函数的非参数方法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Survival Analysis">
+<meta property="og:url" content="http://example.com/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/index.html">
+<meta property="og:site_name" content="寒酱の私密小窝">
+<meta property="og:description" content="本文章既用来测试，也用来记录大数据软件分析Project1中生存分析的Report Q2 Survival Analysis Report数据集读取与预处理读取数据集，在本案例中Churn代表着是否流失，即生存分析中的事件（Event），因此将其转换为布尔值，便于后续分析   Kaplan-Meier 与Log-Rank检验Kaplan-Meier（K-M）方法是生存分析中估计生存函数的非参数方法">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/img/cover/14.webp">
+<meta property="article:published_time" content="2025-03-23T08:30:00.000Z">
+<meta property="article:modified_time" content="2025-03-23T11:27:56.932Z">
+<meta property="article:author" content="可爱小寒酱">
+<meta property="article:tag" content="Survival Analysis">
+<meta property="article:tag" content="Pyspark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/cover/14.webp"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Survival Analysis",
+  "url": "http://example.com/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/",
+  "image": "http://example.com/img/cover/14.webp",
+  "datePublished": "2025-03-23T08:30:00.000Z",
+  "dateModified": "2025-03-23T11:27:56.932Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "可爱小寒酱",
+      "url": "http://example.com/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/jinmao.png"><link rel="canonical" href="http://example.com/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Survival Analysis',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="web_bg" style="background-image: url(/img/background.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/youyingtiaowu.gif" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">1</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博客</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/materials/"><i class="fa-fw fas fa-list"></i><span> 学习资料</span></a></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/cover/14.webp);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">寒酱の私密小窝</span></a><a class="nav-page-title" href="/"><span class="site-name">Survival Analysis</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博客</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/materials/"><i class="fa-fw fas fa-list"></i><span> 学习资料</span></a></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Survival Analysis</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-03-23T08:30:00.000Z" title="发表于 2025-03-23 16:30:00">2025-03-23</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-03-23T11:27:56.932Z" title="更新于 2025-03-23 19:27:56">2025-03-23</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Survival-Analysis/">Survival Analysis</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Survival-Analysis/Pyspark/">Pyspark</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>8分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p>本文章既用来测试，也用来记录大数据软件分析Project1中生存分析的Report</p>
+<h1 id="Q2-Survival-Analysis-Report"><a href="#Q2-Survival-Analysis-Report" class="headerlink" title="Q2 Survival Analysis Report"></a>Q2 Survival Analysis Report</h1><h2 id="数据集读取与预处理"><a href="#数据集读取与预处理" class="headerlink" title="数据集读取与预处理"></a>数据集读取与预处理</h2><p>读取数据集，在本案例中Churn代表着是否流失，即生存分析中的<strong>事件（Event）</strong>，因此将其转换为布尔值，便于后续分析</p>
+<p><img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image.png" alt="image.png"></p>
+<p><img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image1.png" alt="image.png"></p>
+<h2 id="Kaplan-Meier-与Log-Rank检验"><a href="#Kaplan-Meier-与Log-Rank检验" class="headerlink" title="Kaplan-Meier 与Log-Rank检验"></a>Kaplan-Meier 与Log-Rank检验</h2><p>Kaplan-Meier（K-M）方法是生存分析中估计生存函数的非参数方法，适用于处理截尾数据（如随访结束时未发生事件的个体）。其核心思想是：<strong>通过分步计算每个事件时间点的生存概率，逐步构建生存函数</strong>。</p>
+<ul>
+<li><p>KM模型拟合</p>
+<p>  首先对Churn为事件E，tenure为生存时间t进行模型拟合，发现有1795个右删失的数据。</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image2.png" alt="image.png"></p>
+<p>  绘制KM生存曲线，展示了随时间流失情况。生存概率曲线周围的浅蓝色边界表示置信区间，区间越宽，置信度越低。如图所示，估计值的置信度随着时间轴的增加而降低。</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image3.png" alt="image.png"></p>
+<p>  同时我们使用median_survival_time来获取<strong>中位生存时间（Median survival time）</strong>——即有一半个体发生事件的时间，为34</p>
+</li>
+<li><p>Log-Rank 检验</p>
+<p>  Log-Rank 检验是一种用于比较两组或多组生存数据分布是否存在显著差异的非参数统计方法。通过计算每组在每个时间点上的期望死亡数和实际死亡数，然后基于这些数据构建一个统计量，来检验不同组的生存分布是否相同。在零假设下，即不同组的生存分布相同，该统计量服从特定的分布（通常是卡方分布）。通过计算得到的统计量与相应分布的临界值进行比较，或者计算出对应的 P 值，来判断是否拒绝零假设。</p>
+<p>  直观上，我们可以通过观察下方生存曲线来判断不同组的生存水平是否存在显著差异；另一方面，可以通过下方表格的p-value来判断在显著性水平α下是否拒绝零假设，而认为组间存在显著差异</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image4.png" alt="image.png"></p>
+<table>
+<thead>
+<tr>
+<th>Covariate</th>
+<th>Test Statistic</th>
+<th>p-value</th>
+<th>-log2(p)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Gender: Female vs Male</td>
+<td>2.038938</td>
+<td>0.153317</td>
+<td>2.705414</td>
+</tr>
+<tr>
+<td>OnlineSecurity: No vs Yes</td>
+<td>141.60316</td>
+<td>1.187554e-32</td>
+<td>106.053706</td>
+</tr>
+<tr>
+<td>SeniorCitizen: 0.0 vs 1.0</td>
+<td>0.125471</td>
+<td>0.723174</td>
+<td>0.467584</td>
+</tr>
+<tr>
+<td>Partner: No vs Yes</td>
+<td>135.758896</td>
+<td>2.252911e-31</td>
+<td>101.807981</td>
+</tr>
+<tr>
+<td>Dependents: No vs Yes</td>
+<td>35.031241</td>
+<td>3.244576e-09</td>
+<td>28.199323</td>
+</tr>
+<tr>
+<td>PhoneService: No vs Yes</td>
+<td>1.683709</td>
+<td>0.194432</td>
+<td>2.36266</td>
+</tr>
+<tr>
+<td>MultipleLines: No vs No phone service</td>
+<td>12.382712</td>
+<td>4.333273e-04</td>
+<td>11.172255</td>
+</tr>
+<tr>
+<td>MultipleLines: No vs Yes</td>
+<td>72.358368</td>
+<td>1.794602e-17</td>
+<td>55.629114</td>
+</tr>
+<tr>
+<td>MultipleLines: No phone service vs Yes</td>
+<td>1.500291</td>
+<td>0.220626</td>
+<td>2.180322</td>
+</tr>
+<tr>
+<td>InternetService: DSL vs Fiber optic</td>
+<td>25.172866</td>
+<td>5.241449e-07</td>
+<td>20.863531</td>
+</tr>
+<tr>
+<td>StreamingTV: No vs Yes</td>
+<td>12.93926</td>
+<td>0.000322</td>
+<td>11.601718</td>
+</tr>
+<tr>
+<td>StreamingMovies: No vs Yes</td>
+<td>17.941685</td>
+<td>0.000023</td>
+<td>15.422016</td>
+</tr>
+<tr>
+<td>OnlineSecurity: No vs Yes</td>
+<td>141.60316</td>
+<td>1.187554e-32</td>
+<td>106.053706</td>
+</tr>
+<tr>
+<td>OnlineBackup: No vs Yes</td>
+<td>189.482865</td>
+<td>4.122979e-43</td>
+<td>140.799221</td>
+</tr>
+<tr>
+<td>DeviceProtection: No vs Yes</td>
+<td>71.496825</td>
+<td>2.777047e-17</td>
+<td>54.999226</td>
+</tr>
+<tr>
+<td>TechSupport: No vs Yes</td>
+<td>90.430334</td>
+<td>1.916059e-21</td>
+<td>68.822348</td>
+</tr>
+<tr>
+<td>PaperlessBilling: No vs Yes</td>
+<td>8.340802</td>
+<td>0.003876</td>
+<td>8.011049</td>
+</tr>
+<tr>
+<td>PaymentMethod: Bank transfer (automatic) vs Credit card (automatic)</td>
+<td>0.061543</td>
+<td>0.8040732</td>
+<td>0.314601</td>
+</tr>
+<tr>
+<td>PaymentMethod: Bank transfer (automatic) vs Electronic check</td>
+<td>91.191889</td>
+<td>1.303937e-21</td>
+<td>69.377616</td>
+</tr>
+<tr>
+<td>PaymentMethod: Bank transfer (automatic) vs Mailed check</td>
+<td>43.536998</td>
+<td>4.160192e-11</td>
+<td>34.484559</td>
+</tr>
+<tr>
+<td>PaymentMethod: Credit card (automatic) vs Electronic check</td>
+<td>79.991082</td>
+<td>3.761035e-19</td>
+<td>61.205504</td>
+</tr>
+<tr>
+<td>PaymentMethod: Credit card (automatic) vs Mailed check</td>
+<td>39.684613</td>
+<td>2.984678e-10</td>
+<td>31.641706</td>
+</tr>
+<tr>
+<td>PaymentMethod: Electronic check vs Mailed check</td>
+<td>0.898320</td>
+<td>0.3432326</td>
+<td>1.542741</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>提取生存概率</p>
+<p>  完成分析后，可以提取生存概率以用于其他应用程序。这里以InternetService中的DSL为例</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image5.png" alt="image.png"></p>
+</li>
+</ul>
+<h2 id="Cox比例风险"><a href="#Cox比例风险" class="headerlink" title="Cox比例风险"></a>Cox比例风险</h2><p>与Kaplan-Meier相比，COX比例风险可用于多变量分析。Kaplan-Meier用于估计生存概率，而考克斯比例风险用于估计风险比，风险比表示两个个体（或组）之间存在的风险差异。</p>
+<p>Cox比例风险方程由基线风险和部分风险乘积构成：</p>
+<p>$h(t)&#x3D;h_0(t)\exp\left(\sum_{i &#x3D; 1}^{p}\beta_{i}X_{i}\right)$，</p>
+<p>比例风险假设要求协变量的效应($\beta$)是时间独立的，即风险比在随访全程中保持稳。在Cox比例风险模型的背景下，两组之间的风险比随时间成比例。</p>
+<ul>
+<li><p>模型拟合与评估</p>
+<p>  为了调用Lifelines库中Cox比例风险的函数，需要对分类列进行one-hot编码，这里手工选择了五个变量用于实现。此处要注意one-hot编码后会产生新的线性相关的列，例如Dependents_Yes和Dependents_No，所以只需选择其一即可。</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image6.png" alt="image.png"></p>
+<p>  在数据处理后调用相关库拟合比例风险模型，输出拟合后结果。有图片可知本库采用 Breslow 方法估计基准风险，共纳入 3351 条观测数据，观测到 1556 个事件（客户流失）。</p>
+<p>  同时可以得到各个协变量的影响，例如有家属（Dependents_Yes&#x3D;Yes）的客户，流失风险比无家属客户低 28%（风险比 0.72）；使用 DSL 网络服务的客户，流失风险比参照组低 20%等。且所有协变量的 p 值均小于 0.005，表明其对客户流失风险的影响具有统计学显著性。</p>
+<p>  Concordance 指数为 0.64，说明模型对客户流失与留存的区分能力处于中等水平。Partial AIC 为 22639.90，数值越小表示模型拟合效果相对越好（需结合业务场景综合判断）。似然比检验统计量为 337.77（自由度 4），对应的 $-\log2(p)$ 为 236.24，进一步验证模型整体显著性，即纳入的协变量对解释客户流失风险具有统计学意义</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image7.png" alt="image.png"></p>
+<p>  图中展示了不同变量的风险比（HR）及 95% 置信区间，涉及变量包括 InternetService_DSL、Dependents_Yes、TechSupport_Yes、OnlineBackup_Yes。所有变量的 HR 值均小于 1，说明：</p>
+<p>  存在这些变量对应情况时（如使用 DSL 网络、有家属、享受技术支持、开通在线备份服务），相关风险（如客户流失风险）会降低。</p>
+<p>  其中，OnlineBackup_Yes 的 HR 值最低，降低风险的效果最显著；TechSupport_Yes、Dependents_Yes、InternetService_DSL 也依次呈现风险降低趋势，且各变量的 95% 置信区间均未包含 1，表明结果具有统计学意义。</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image8.png" alt="image.png"></p>
+</li>
+<li><p>验证比例风险假设</p>
+<p>  首先使用统计检验方法验证比例风险假设，零假设为满足比例风险假设，由p-value可知有三个变量＜0.005由此不满足比例风险假设的需求</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image9.png" alt="image.png"></p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image10.png" alt="image.png"></p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image11.png" alt="image.png"></p>
+<p>  使用Schoenfield 残差图，若残差随时间无明显上升或下降趋势，散点随机分布，说明对应变量满足比例风险假设（协变量对风险的影响不随时间变化）；若残差呈现明显上升或下降趋势，说明不满足假设。图中拟合线（如黑色平滑曲线）可辅助判断趋势：若拟合线平稳，无明显斜率，支持比例风险假设；若拟合线斜率显著（上升或下降），则不满足假设。因此由图可知只有第一个变量满足假设，这与使用统计检验得到的结论相同。</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image12.png" alt="image.png"></p>
+<p>  最后使用Log-log Kaplan-Meier Plots方法检验，当未违反比例风险系数时，双对数图中的Kaplan-Meier曲线将呈现平行。</p>
+<pre><code>  ![image.png](image13.png)
+</code></pre>
+</li>
+</ul>
+<h2 id="加速失效时间"><a href="#加速失效时间" class="headerlink" title="加速失效时间"></a>加速失效时间</h2><p>加速失效时间模型（Accelerated Failure Time Model，AFT）假设协变量会按一定比例加速（或减速）个体的失效时间，核心公式体系如下：</p>
+<p>$\ln(T) &#x3D; \mu + \sum_{i &#x3D; 1}^{p}\beta_{i}X_{i} + \epsilon$</p>
+<p>加速因子用来衡量协变量对生存时间的影响程度，定义为：</p>
+<p>$AF &#x3D; \frac{\exp(\mu + \boldsymbol{\beta}^T\mathbf{X}_1)}{\exp(\mu + \boldsymbol{\beta}^T\mathbf{X}_2)} &#x3D; \exp\left[ \boldsymbol{\beta}^T(\mathbf{X}_1 - \mathbf{X}_2) \right]$</p>
+<ul>
+<li><p>模型拟合与评估</p>
+<p>  在进行类似前文的数据处理后，直接进行总体的模型拟合。下图得到中位生存时间为135.51。</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image14.png" alt="image.png"></p>
+<p>  输出模型结果，可得到各协变量系数、加速因子、p-value，以及模型拟合指标。由图可得，Concordance 指数为 <strong>0.73</strong>，表明模型对客户流失与留存的区分能力较好。AIC 值为 <strong>13,698.72</strong>，数值越小表示模型拟合效果相对更优。所有协变量的 p 值均小于 0.005，统计学显著性高。加速因子 $\exp(\text{coef}) &gt; 1$，表明对应协变量会延长客户生存时间，降低流失风险。</p>
+<pre><code>  ![image.png](image15.png)
+</code></pre>
+<p>  展示了加速失效时间（AFT）模型中各变量的 <strong>对数加速失效率（log (accelerated failure rate)）及其 95% 置信区间</strong>，置信区间不跨越 0 的变量（即所有展示的协变量）均对客户生存时间有显著影响，为模型中协变量的作用提供了直观验证，支持 “协变量显著影响客户流失风险” 的结论。</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image16.png" alt="image.png"></p>
+</li>
+<li><p>模型验证</p>
+<p>  在使用加速失效时间模型时，需要评估两个基本假设：模型是否符合<code>比例优势</code>假设，以及指定的分布是否适合此模型。两个问题分别可以通过判断图中的线是否平行和线条是否是直的来判断。由下图可见绝大部分线相对直，意味着选择log-logistic作为指定分布是一个相对合理的选择，但是大部分线都是不平行的，说明加速失效时间不适用于指定模型</p>
+<p>  若某条曲线上升更快，说明对应特征取值的用户，其流失概率的变化速率随时间增长更明显。例如，在 <code>OnlineSecurity</code> 子图中，对比 <code>Yes</code>（橙色）和 <code>No</code>（蓝色）曲线，若某条曲线在相同对数时间下 <code>failureOdds</code> 更大，说明该群体的流失风险变化更剧烈。</p>
+<p>  <img src="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/image17.png" alt="image.png"></p>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://example.com">可爱小寒酱</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/">http://example.com/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="http://example.com" target="_blank">寒酱の私密小窝</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Survival-Analysis/">Survival Analysis</a><a class="post-meta__tags" href="/tags/Pyspark/">Pyspark</a></div><div class="post-share"><div class="social-share" data-image="/img/cover/14.webp" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i>赞助</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/img/wechat.jpg" target="_blank"><img class="post-qr-code-img" src="/img/wechat.jpg" alt="wechat"/></a><div class="post-qr-code-desc">wechat</div></li></ul></div></div><nav class="pagination-post" id="pagination"></nav><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="gitalk-container"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/youyingtiaowu.gif" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">可爱小寒酱</div><div class="author-info-description">好好学习，天天可爱！(●'◡'●)ki~</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">1</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Liuxiaohannn"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">初来驾到，日后会不定时更新笔记和学习资料，欢迎大家来交流哇！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Q2-Survival-Analysis-Report"><span class="toc-number">1.</span> <span class="toc-text">Q2 Survival Analysis Report</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86%E8%AF%BB%E5%8F%96%E4%B8%8E%E9%A2%84%E5%A4%84%E7%90%86"><span class="toc-number">1.1.</span> <span class="toc-text">数据集读取与预处理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kaplan-Meier-%E4%B8%8ELog-Rank%E6%A3%80%E9%AA%8C"><span class="toc-number">1.2.</span> <span class="toc-text">Kaplan-Meier 与Log-Rank检验</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Cox%E6%AF%94%E4%BE%8B%E9%A3%8E%E9%99%A9"><span class="toc-number">1.3.</span> <span class="toc-text">Cox比例风险</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E9%80%9F%E5%A4%B1%E6%95%88%E6%97%B6%E9%97%B4"><span class="toc-number">1.4.</span> <span class="toc-text">加速失效时间</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/" title="Survival Analysis"><img src="/img/cover/14.webp" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Survival Analysis"/></a><div class="content"><a class="title" href="/2025/03/23/2025-03-23-Survival+Analysis/Survival+Analysis/" title="Survival Analysis">Survival Analysis</a><time datetime="2025-03-23T08:30:00.000Z" title="发表于 2025-03-23 16:30:00">2025-03-23</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2025 By 可爱小寒酱</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.3.5</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const commentCount = n => {
+    const isCommentCount = document.querySelector('#post-meta .gitalk-comment-count')
+    if (isCommentCount) {
+      isCommentCount.textContent= n
+    }
+  }
+
+  const initGitalk = (el, path) => {
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGitalk = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+
+    const gitalk = new Gitalk({
+      clientID: 'Ov23li17s9Wrcgr4jBRw',
+      clientSecret: '00a23e05ffdddf39725dadd107a28cd39dfd1b2a',
+      repo: 'gitalk',
+      owner: 'Liuxiaohannn',
+      admin: ['Liuxiaohannn'],
+      updateCountCallback: commentCount,
+      ...option,
+      id: isShuoshuo ? path : (option && option.id) || 'd5c6ad9e0def6549833e58d5fcd309ff'
+    })
+
+    gitalk.render('gitalk-container')
+  }
+
+  const loadGitalk = async(el, path) => {
+    if (typeof Gitalk === 'function') initGitalk(el, path)
+    else {
+      await btf.getCSS('https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css')
+      await btf.getScript('https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.js')
+      initGitalk(el, path)
+    }
+  }
+
+  if (isShuoshuo) {
+    'Gitalk' === 'Gitalk'
+      ? window.shuoshuoComment = { loadComment: loadGitalk }
+      : window.loadOtherComment = loadGitalk
+    return
+  }
+
+  if ('Gitalk' === 'Gitalk' || ![object Object]) {
+    if ([object Object]) btf.loadComment(document.getElementById('gitalk-container'), loadGitalk)
+    else loadGitalk()
+  } else {
+    window.loadOtherComment = loadGitalk
+  }
+})()</script></div><script src="/js/sakura.js"></script><canvas class="fireworks" mobile="true"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script id="canvas_nest" defer="defer" color="255,204,229" opacity="0.6" zIndex="-1" count="100" mobile="true" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = true;
+document.body.addEventListener('input', POWERMODE);
+</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
